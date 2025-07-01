@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>معرض الصور</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Cairo', sans-serif;
+      padding-top: 120px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      padding: 0;
+    }
+    .square {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+      overflow: hidden;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .square img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      top: 0;
+      left: 0;
+    }
+    .square .label {
+  display: none;
+}
+    #scrollTopBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 1000;
+    }
+    #lightbox {
+      display: none;
+      overflow: hidden;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      flex-direction: column;
+      color: white;
+      text-align: center;
+    }
+    #lightbox img {
+  width: 90%;
+  height: auto;
+  transform: none;
+      transform: scale(1.5);
+      transition: transform 0.3s ease;
+      border-radius: 8px;
+    }
+    #dropzone {
+      border: 2px dashed #aaa;
+      padding: 20px;
+      margin: 10px;
+      text-align: center;
+      color: #666;
+      border-radius: 6px;
+    }
+    #categoryFilter {
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 6px;
+      font-size: 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+  
+@media (pointer: coarse) {
+  #lightbox-img {
+    touch-action: none;
+    transform: none !important;
+  }
+}
+</style>
+</head>
+<body>
+
+  <div id="mainTitle" style="position: fixed; top: -5px; left: 0; width: 100%; background: white; text-align: center; padding: 4px 0 2px; z-index: 1000; font-family: 'Cairo', sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1); line-height: 1.4;">
+    <div style="font-size: 24px; font-weight: bold; color: green; margin: 0;">متجري</div>
+    <div style="font-size: 13px; color: #666; margin: 2px 0 0;">مشروع كل بيت</div>
+  </div>
+
+  <button onclick="askAdmin()" style="position: absolute; top: 70px; right: 10px; z-index: 1000; background: #333; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;">👤 أدمن</button>
+
+  <div style="position: absolute; top: 110px; right: 10px; z-index: 1000; display: flex; align-items: center; gap: 6px; background: #25D366; color: white; border-radius: 6px; padding: 4px 10px; font-size: 14px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 20px; height: 20px;">
+    <a href="https://wa.me/201097646018" target="_blank" style="color: white; text-decoration: none; direction: ltr;">01097646018</a>
+  </div>
+
+
+  <div id="adminPanel" style="display: none; flex-direction: column; gap: 10px; margin: 10px;">
+    <select id="categorySelect" style="margin-top: 100px;">
+      <option value="">-- اختر التصنيف --</option>
+      <option value="كاشات حريمي">كاشات حريمي</option>
+      <option value="بيجامات حريمي">بيجامات حريمي</option>
+      <option value="منتجات الجمال والمكياجات">منتجات الجمال والمكياجات</option>
+      <option value="إكسسوارات حريمي ">إكسسوارات حريمي </option>
+      <option value="ملابس خروج حريمي">ملابس خروج حريمي</option>
+      <option value="شنط حريمي ">شنط حريمي </option>
+      <option value="أحذية حريمي">أحذية حريمي</option>
+      <option value="أدوات منزلية">أدوات منزلية</option>
+      <option value="ملابس أطفال">ملابس أطفال</option>
+      <option value="أحذية أطفال">أحذية أطفال</option>
+      <option value="ملابس رجالي">ملابس رجالي</option>
+      <option value="أحذية رجالي">أحذية رجالي</option>
+    </select>
+    <input type="file" multiple accept="image/*" id="fileInput" />
+    <div id="dropzone">اسحب الصور هنا</div>
+    <button onclick="shuffleGallery()">لخبطة الصور</button>
+    <button onclick="confirmClearGallery()">حذف جميع الصور</button>
+  </div>
+
+  <select id="categoryFilter">
+    <option value="all">عرض الكل</option>
+    <option value="كاشات حريمي">كاشات حريمي</option>
+    <option value="بيجامات حريمي">بيجامات حريمي</option>
+    <option value="منتجات الجمال والمكياجات">منتجات الجمال والمكياجات</option>
+    <option value="إكسسوارات حريمي ">إكسسوارات حريمي </option>
+    <option value="ملابس خروج حريمي">ملابس خروج حريمي</option>
+    <option value="شنط حريمي ">شنط حريمي </option>
+    <option value="أحذية حريمي">أحذية حريمي</option>
+    <option value="أدوات منزلية">أدوات منزلية</option>
+    <option value="ملابس أطفال">ملابس أطفال</option>
+    <option value="أحذية أطفال">أحذية أطفال</option>
+    <option value="ملابس رجالي">ملابس رجالي</option>
+    <option value="أحذية رجالي">أحذية رجالي</option>
+  </select>
+
+  <p style="text-align:center; font-size:14px; color:#555; margin-top: 60px;">
+    عدد المنتجات: <span id="imageCount">0</span>
+  </p>
+
+  <div class="gallery" id="gallery"></div>
+
+  <div id="lightbox" onclick="this.style.display='none'">
+    <button onclick="event.stopPropagation(); prevImage();" style="position:absolute; left:10px; top:50%; font-size:30px; background:none; border:none; color:white;">❮</button>
+    <img id="lightbox-img" src="" />
+    <button onclick="event.stopPropagation(); nextImage();" style="position:absolute; right:10px; top:50%; font-size:30px; background:none; border:none; color:white;">❯</button>
+    <p id="lightbox-category"></p>
+  </div>
+
+  <button id="scrollTopBtn" onclick="scrollToTop()">↑</button>
+
+  <script>
+    let isAdmin = false;
+    const galleryEl = document.getElementById("gallery");
+    const scrollBtn = document.getElementById("scrollTopBtn");
+    const categorySelect = document.getElementById("categorySelect");
+    const categoryFilter = document.getElementById("categoryFilter");
+    let images = [];
+    let page = 1;
+    const pageSize = 20;
+
+    function updateCounter() {
+      document.getElementById("imageCount").textContent = getFilteredImages().length;
+    }
+
+    function getFilteredImages() {
+      const selectedCategory = categoryFilter.value;
+      return selectedCategory === "all" ? images : images.filter(i => i.category === selectedCategory);
+    }
+
+    function renderChunk() {
+      const filtered = getFilteredImages();
+      const chunk = filtered.slice((page - 1) * pageSize, page * pageSize);
+      const grouped = {};
+      chunk.forEach(img => {
+        if (!grouped[img.group]) grouped[img.group] = [];
+        grouped[img.group].push(img);
+      });
+
+      Object.values(grouped).forEach(groupImgs => {
+        const img = groupImgs[0];
+        const div = document.createElement("div");
+        div.className = "square";
+
+        const image = document.createElement("img");
+        image.src = img.src;
+        image.onclick = e => {
+          e.stopPropagation();
+          openLightbox(groupImgs.map(i => i.src), img.category);
+        };
+        div.appendChild(image);
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = img.category || "";
+        div.appendChild(label);
+
+        if (isAdmin) {
+          const delBtn = document.createElement("div");
+          delBtn.textContent = "✖";
+          delBtn.style.cssText = `
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(0,0,0,0.6); color: white;
+            font-size: 14px; width: 20px; height: 20px;
+            line-height: 20px; text-align: center;
+            border-radius: 50%; cursor: pointer; z-index: 10;
+          `;
+          delBtn.onclick = e => {
+            e.stopPropagation();
+            images = images.filter(i => i.id !== img.id);
+            localStorage.setItem("gallery_images", JSON.stringify(images));
+            galleryEl.innerHTML = "";
+            page = 1;
+            renderChunk();
+            updateCounter();
+          };
+          div.appendChild(delBtn);
+        }
+
+        galleryEl.appendChild(div);
+      });
+    }
+
+    function openLightbox(imgArray, category) {
+      currentLightboxImages = imgArray;
+      currentLightboxIndex = 0;
+      showLightboxImage();
+      document.getElementById("lightbox").style.display = "flex";
+      document.getElementById("lightbox-category").textContent = category || "";
+    // منع إغلاق اللايت بوكس عند الضغط على الصورة نفسها
+    document.getElementById("lightbox-img").onclick = e => {
+      e.stopPropagation();
+    };
+
+      const leftArrow = document.querySelector("#lightbox button:nth-of-type(1)");
+      const rightArrow = document.querySelector("#lightbox button:nth-of-type(2)");
+      if (imgArray.length <= 1) {
+        leftArrow.style.display = "none";
+        rightArrow.style.display = "none";
+      } else {
+        leftArrow.style.display = "block";
+        rightArrow.style.display = "block";
+      }
+    }
+
+    function showLightboxImage() {
+      document.getElementById("lightbox-img").src = currentLightboxImages[currentLightboxIndex];
+    }
+
+    function nextImage() {
+      if (currentLightboxIndex < currentLightboxImages.length - 1) {
+        currentLightboxIndex++;
+        showLightboxImage();
+      }
+    }
+
+    function prevImage() {
+      if (currentLightboxIndex > 0) {
+        currentLightboxIndex--;
+        showLightboxImage();
+      }
+    }
+
+    function handleUpload(files) {
+      const selectedCategory = categorySelect.value;
+      if (!selectedCategory) return alert("اختر تصنيفًا أولاً");
+      const newImgs = [];
+      let loaded = 0;
+      const groupId = Date.now();
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          newImgs.push({ id: Date.now() + Math.random(), src: e.target.result, category: selectedCategory, group: groupId });
+          loaded++;
+          if (loaded === files.length) {
+            const stored = JSON.parse(localStorage.getItem("gallery_images") || "[]");
+            const updated = [...newImgs, ...stored];
+            localStorage.setItem("gallery_images", JSON.stringify(updated));
+            images = updated;
+            galleryEl.innerHTML = "";
+            page = 1;
+            renderChunk();
+            updateCounter();
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function confirmClearGallery() {
+      if (confirm("هل أنت متأكد أنك تريد حذف جميع الصور؟")) {
+        localStorage.removeItem("gallery_images");
+        images = [];
+        galleryEl.innerHTML = "";
+        page = 1;
+        updateCounter();
+      }
+    }
+
+    function shuffleGallery() {
+      images = images.sort(() => Math.random() - 0.5);
+      localStorage.setItem("gallery_images", JSON.stringify(images));
+      galleryEl.innerHTML = "";
+      page = 1;
+      renderChunk();
+      updateCounter();
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function askAdmin() {
+      const user = prompt("اسم المستخدم:");
+      const pass = prompt("كلمة السر:");
+      if (user === "2330498Aa" && pass === "2330498Aa") {
+        document.getElementById("adminPanel").style.display = "flex";
+        isAdmin = true;
+        galleryEl.innerHTML = "";
+        page = 1;
+        renderChunk();
+        updateCounter();
+      } else {
+        alert("بيانات الدخول غير صحيحة");
+      }
+    }
+
+    document.getElementById("fileInput").addEventListener("change", e => handleUpload(e.target.files));
+    categoryFilter.addEventListener("change", () => {
+      page = 1;
+      galleryEl.innerHTML = "";
+      renderChunk();
+  if (categoryFilter.value === "all") {
+    const total = getFilteredImages().length;
+    while (page * pageSize < total) {
+      page++;
+      renderChunk();
+    }
+  }
+      updateCounter();
+    });
+
+    const dropzone = document.getElementById("dropzone");
+    dropzone.addEventListener("dragover", e => {
+      e.preventDefault();
+      dropzone.style.background = "#eef";
+    });
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.style.background = "";
+    });
+    dropzone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropzone.style.background = "";
+      handleUpload(e.dataTransfer.files);
+    });
+
+    const stored = JSON.parse(localStorage.getItem("gallery_images") || "[]");
+    images = stored;
+    renderChunk();
+    updateCounter();
+
+    let currentLightboxIndex = 0;
+    let currentLightboxImages = [];
+  
+  window.addEventListener("scroll", () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+      const total = getFilteredImages().length;
+      if (page * pageSize < total) {
+        page++;
+        renderChunk();
+      }
+    }
+
+    if (window.scrollY > 300) {
+      scrollBtn.style.display = "block";
+    } else {
+      scrollBtn.style.display = "none";
+    }
+  });
+
+
+let lightboxImg = document.getElementById('lightbox-img');
+let scale = 1;
+let lastTouchDistance = 0;
+let startX = 0, startY = 0;
+let moveX = 0, moveY = 0;
+let isPanning = false;
+
+lightboxImg.addEventListener('touchstart', function (e) {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    lastTouchDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  } else if (e.touches.length === 1) {
+    isPanning = true;
+    startX = e.touches[0].clientX - moveX;
+    startY = e.touches[0].clientY - moveY;
+  }
+}, { passive: false });
+
+lightboxImg.addEventListener('touchmove', function (e) {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    let currentDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    let delta = currentDistance - lastTouchDistance;
+    scale += delta * 0.005;
+    scale = Math.max(1, Math.min(scale, 4));
+    lightboxImg.style.transform = `scale(${scale}) translate(${moveX}px, ${moveY}px)`;
+    lastTouchDistance = currentDistance;
+  } else if (e.touches.length === 1 && isPanning && scale > 1) {
+    moveX = e.touches[0].clientX - startX;
+    moveY = e.touches[0].clientY - startY;
+    lightboxImg.style.transform = `scale(${scale}) translate(${moveX}px, ${moveY}px)`;
+  }
+}, { passive: false });
+
+lightboxImg.addEventListener('touchend', function (e) {
+  if (e.touches.length === 0) {
+    isPanning = false;
+  }
+});
+
+
+window.addEventListener("popstate", function () {
+  const lightbox = document.getElementById("lightbox");
+  if (lightbox.style.display === "flex") {
+    lightbox.style.display = "none";
+    history.pushState(null, null, location.href); // إعادة الحالة حتى لا يخرج المستخدم
+  }
+});
+
+// عند فتح اللايت بوكس، أضف حالة إلى التاريخ
+function openLightbox(imgArray, category) {
+  currentLightboxImages = imgArray;
+  currentLightboxIndex = 0;
+  showLightboxImage();
+  const lightbox = document.getElementById("lightbox");
+  lightbox.style.display = "flex";
+  document.getElementById("lightbox-category").textContent = category || "";
+
+  // منع إغلاق اللايت بوكس عند الضغط على الصورة نفسها
+  document.getElementById("lightbox-img").onclick = e => {
+    e.stopPropagation();
+  };
+
+  const leftArrow = document.querySelector("#lightbox button:nth-of-type(1)");
+  const rightArrow = document.querySelector("#lightbox button:nth-of-type(2)");
+  if (imgArray.length <= 1) {
+    leftArrow.style.display = "none";
+    rightArrow.style.display = "none";
+  } else {
+    leftArrow.style.display = "block";
+    rightArrow.style.display = "block";
+  }
+
+  history.pushState(null, null, location.href); // إضافة الحالة عند فتح اللايت بوكس
+}
+
+window.history.pushState({}, "");
+
+</script>
+</body>
+</html>
